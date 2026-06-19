@@ -4439,4 +4439,4 @@ def update_risk_config():
 
 
 if __name__ == '__main__':
-    run_web_server(debug=False, port=5001)
+    run_web_server(debug=False, port=8888)
