@@ -320,6 +320,9 @@
                     <span class="status-indicator" id="status-indicator">
                         <span class="dot green"></span> 就绪
                     </span>
+                    <span class="status-indicator" id="user-info">
+                         <a href="javascript:void(0);" onclick="loginOut()">admin</a>
+                    </span>
                 </div>
             </header>
 
@@ -2280,5 +2283,26 @@
             </div>
         </div>
     </div>
+<script>
+      // ==================== 初始化：记住的用户名自动填充 ====================
+        window.addEventListener('DOMContentLoaded', function() {
+        //主页登录用户名赋值
+        const container = document.getElementById('user-info');
+        const link = container.querySelector('a');
+        link.textContent = localStorage.getItem('stock_platform_user');
+        });
+
+         /**
+         * 表单抖动动画
+         */
+        function loginOut() {
+            localStorage.setItem('stock_platform_user','');
+            fetch('/api/user/loginout');
+            // 延迟跳转，让用户看到成功提示
+            setTimeout(() => {
+            window.location.href = '/';
+            }, 1000);
+        }
+</script>
 </body>
 </html>

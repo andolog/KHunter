@@ -2,7 +2,8 @@
 Web 服务器 - A股量化选股系统前端
 """
 from trading.strategy_runner import StrategyRunner
-from flask import Flask, render_template, jsonify, request, send_from_directory
+from flask import Flask, render_template, session, jsonify, request, send_from_directory
+from functools import wraps
 from flask_socketio import SocketIO, emit
 import json
 import sys
@@ -121,6 +122,8 @@ app = Flask(__name__,
             template_folder='web/templates',
             static_folder='web/static')
 
+app.config['SECRET_KEY'] = 'rich4ever'  # 必须配置，否则 session 无法工作
+
 # 配置JSON编码器
 app.json_encoder = NumpyEncoder
 
@@ -224,10 +227,96 @@ update_status = {
 }
 
 
+# 定义校验装饰器
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return render_template('login.html')
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
+@login_required
 def index():
     """主页"""
     return render_template('index.html')
+
+
+@app.route('/login')
+def login():
+    """主页"""
+    return render_template('login.html')
+
+
+# ==================== 登录路由 ====================
+
+@app.route('/api/user/login', methods=['POST'])
+def user_login():
+    """
+    用户登录
+
+    请求参数：
+        user_name: admin
+        user_pwd: admin#888888
+
+    返回：
+        是否登录成功
+    """
+    try:
+        data = request.get_json()
+        user_name = data.get('user_name')
+        user_pwd = data.get('user_pwd')
+
+        if not user_name or not user_pwd:
+            return jsonify({
+                'success': False,
+                'message': '用户名密码不能为空'
+            })
+
+        if user_name=='admin' and user_pwd=='admin#888888':
+            session['user_id'] = user_name  # 只存用户 ID，别存敏感信息
+            return jsonify({
+                'success': True,
+                'user_name': user_name,
+                'message': '登录成功'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '用户名密码错误'
+            })
+    except Exception as e:
+        logger.error(f"登录失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        })
+
+
+@app.route('/api/user/loginout', methods=['get'])
+def user_loginout():
+    """
+    用户登录
+    请求参数：
+        user_name: admin
+        user_pwd: admin#888888
+    返回：
+        是否登录成功
+    """
+    try:
+        session.clear()
+        return jsonify({
+            'success': True,
+            'message': '登出成功'
+        })
+    except Exception as e:
+        logger.error(f"登出失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        })
+
 
 
 @app.route('/api/stocks')
@@ -3338,7 +3427,6 @@ def _generate_trade_dates(start_date: str, end_date: str) -> list:
         current += timedelta(days=1)
     
     return dates
-
 
 # ==================== 策略运行相关路由 ====================
 

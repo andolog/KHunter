@@ -83,7 +83,6 @@ async function loadModules() {
             strategyRunner: strategyRunnerModule,
             risk: riskModule
         };
-        
         // 初始化
         await initializeApp();
     } catch (error) {
